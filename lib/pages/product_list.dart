@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 import './product_edit.dart';
-import '../scoped_models/main.dart';
+import '../scoped-models/main.dart';
 
 class ProductListPage extends StatefulWidget {
   final MainModel model;
 
   ProductListPage(this.model);
+
   @override
   State<StatefulWidget> createState() {
     return _ProductListPageState();
@@ -33,8 +34,8 @@ class _ProductListPageState extends State<ProductListPage> {
               return ProductEditPage();
             },
           ),
-        ).then((_) => {
-          model.selectProduct(null),
+        ).then((_) {
+          model.selectProduct(null);
         });
       },
     );

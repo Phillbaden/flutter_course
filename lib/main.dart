@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
-//import 'package:flutter/rendering.dart ';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:map_view/map_view.dart';
+// import 'package:flutter/rendering.dart';
 
-import 'package:flutter_course/pages/auth.dart';
-import 'package:flutter_course/pages/product_admin.dart';
-import 'package:flutter_course/pages/products.dart';
-import 'package:flutter_course/pages/product.dart';
-import 'package:flutter_course/scoped_models/main.dart';
+import './pages/auth.dart';
+import './pages/products_admin.dart';
+import './pages/products.dart';
+import './pages/product.dart';
+import './scoped-models/main.dart';
 import './models/product.dart';
 
 void main() {
-//  debugPaintSizeEnabled = true;
+  // debugPaintSizeEnabled = true;
+  // debugPaintBaselinesEnabled = true;
+  // debugPaintPointersEnabled = true;
+  MapView.setApiKey('AIzaSyCLQTG59usHzrIRrkQwmb8Pzu8OMqsa7ho');
   runApp(MyApp());
 }
 
@@ -23,10 +27,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  @override
   final MainModel _model = MainModel();
   bool _isAuthenticated = false;
 
+  @override
   void initState() {
     _model.autoAuthenticate();
     _model.userSubject.listen((bool isAuthenticated) {
@@ -39,20 +43,22 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    print('building main page');
     return ScopedModel<MainModel>(
       model: _model,
       child: MaterialApp(
+        // debugShowMaterialGrid: true,
         theme: ThemeData(
-          brightness: Brightness.light,
-          primarySwatch: Colors.deepOrange,
-          accentColor: Colors.deepPurple,
-          buttonColor: Colors.deepPurple,
-        ),
-//      home: AuthPage(),
+            brightness: Brightness.light,
+            primarySwatch: Colors.deepOrange,
+            accentColor: Colors.deepPurple,
+            buttonColor: Colors.deepPurple),
+        // home: AuthPage(),
         routes: {
           '/': (BuildContext context) =>
               !_isAuthenticated ? AuthPage() : ProductsPage(_model),
-          '/admin': (BuildContext context) => !_isAuthenticated ? AuthPage() : ProductsAdminPage(_model),
+          '/admin': (BuildContext context) =>
+              !_isAuthenticated ? AuthPage() : ProductsAdminPage(_model),
         },
         onGenerateRoute: (RouteSettings settings) {
           if (!_isAuthenticated) {
@@ -71,14 +77,16 @@ class _MyAppState extends State<MyApp> {
               return product.id == productId;
             });
             return MaterialPageRoute<bool>(
-              builder: (BuildContext context) => !_isAuthenticated ? AuthPage() : ProductPage(product),
+              builder: (BuildContext context) =>
+                  !_isAuthenticated ? AuthPage() : ProductPage(product),
             );
           }
           return null;
         },
         onUnknownRoute: (RouteSettings settings) {
           return MaterialPageRoute(
-              builder: (BuildContext context) => !_isAuthenticated ? AuthPage() : ProductsPage(_model));
+              builder: (BuildContext context) =>
+                  !_isAuthenticated ? AuthPage() : ProductsPage(_model));
         },
       ),
     );

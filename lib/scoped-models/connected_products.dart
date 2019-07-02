@@ -9,6 +9,7 @@ import 'package:rxdart/subjects.dart';
 import '../models/product.dart';
 import '../models/user.dart';
 import '../models/auth.dart';
+import '../models/location_data.dart';
 
 mixin ConnectedProductsModel on Model {
   List<Product> _products = [];
@@ -45,6 +46,7 @@ mixin ProductsModel on ConnectedProductsModel {
     if (selectedProductId == null) {
       return null;
     }
+
     return _products.firstWhere((Product product) {
       return product.id == _selProductId;
     });
@@ -54,24 +56,27 @@ mixin ProductsModel on ConnectedProductsModel {
     return _showFavorites;
   }
 
-  Future<bool> addProduct(
-      String title, String description, String image, double price) async {
+  Future<bool> addProduct(String title, String description, String image,
+      double price, LocationData locData) async {
     _isLoading = true;
     notifyListeners();
     final Map<String, dynamic> productData = {
       'title': title,
       'description': description,
       'image':
-          'https://www.sciencenewsforstudents.org/sites/default/files/2016/11/main/articles/860_main_milkchocolate.png',
+      'https://upload.wikimedia.org/wikipedia/commons/6/68/Chocolatebrownie.JPG',
       'price': price,
       'userEmail': _authenticatedUser.email,
       'userId': _authenticatedUser.id,
+      'loc_lat': locData.latitude,
+      'loc_lng': locData.longitude,
+      'loc_address': locData.address
     };
-
-    final http.Response response = await http.post(
-        'https://flutter-products-b4307.firebaseio.com/products.json?auth=${_authenticatedUser.token}',
-        body: json.encode(productData));
     try {
+      final http.Response response = await http.post(
+          'https://flutter-products.firebaseio.com/products.json?auth=${_authenticatedUser.token}',
+          body: json.encode(productData));
+
       if (response.statusCode != 200 && response.statusCode != 201) {
         _isLoading = false;
         notifyListeners();
@@ -84,6 +89,7 @@ mixin ProductsModel on ConnectedProductsModel {
           description: description,
           image: image,
           price: price,
+          location: locData,
           userEmail: _authenticatedUser.email,
           userId: _authenticatedUser.id);
       _products.add(newProduct);
@@ -95,25 +101,33 @@ mixin ProductsModel on ConnectedProductsModel {
       notifyListeners();
       return false;
     }
+    // .catchError((error) {
+    //   _isLoading = false;
+    //   notifyListeners();
+    //   return false;
+    // });
   }
 
-  Future<bool> updateProduct(
-      String title, String description, String image, double price) {
+  Future<bool> updateProduct(String title, String description, String image,
+      double price, LocationData locData) {
     _isLoading = true;
     notifyListeners();
     final Map<String, dynamic> updateData = {
       'title': title,
       'description': description,
       'image':
-          'https://www.sciencenewsforstudents.org/sites/default/files/2016/11/main/articles/860_main_milkchocolate.png',
+      'https://upload.wikimedia.org/wikipedia/commons/6/68/Chocolatebrownie.JPG',
       'price': price,
+      'loc_lat': locData.latitude,
+      'loc_lng': locData.longitude,
+      'loc_address': locData.address,
       'userEmail': selectedProduct.userEmail,
       'userId': selectedProduct.userId
     };
     return http
         .put(
-            'https://flutter-products-b4307.firebaseio.com/products/${selectedProduct.id}.json?auth=${_authenticatedUser.token}',
-            body: json.encode(updateData))
+        'https://flutter-products.firebaseio.com/products/${selectedProduct.id}.json?auth=${_authenticatedUser.token}',
+        body: json.encode(updateData))
         .then((http.Response response) {
       _isLoading = false;
       final Product updatedProduct = Product(
@@ -122,6 +136,7 @@ mixin ProductsModel on ConnectedProductsModel {
           description: description,
           image: image,
           price: price,
+          location: locData,
           userEmail: selectedProduct.userEmail,
           userId: selectedProduct.userId);
       _products[selectedProductIndex] = updatedProduct;
@@ -142,7 +157,7 @@ mixin ProductsModel on ConnectedProductsModel {
     notifyListeners();
     return http
         .delete(
-            'https://flutter-products-b4307.firebaseio.com/products/${deletedProductId}.json?auth=${_authenticatedUser.token}')
+        'https://flutter-products.firebaseio.com/products/${deletedProductId}.json?auth=${_authenticatedUser.token}')
         .then((http.Response response) {
       _isLoading = false;
       notifyListeners();
@@ -159,9 +174,8 @@ mixin ProductsModel on ConnectedProductsModel {
     notifyListeners();
     return http
         .get(
-            'https://flutter-products-b4307.firebaseio.com/products.json?auth=${_authenticatedUser.token}')
+        'https://flutter-products.firebaseio.com/products.json?auth=${_authenticatedUser.token}')
         .then<Null>((http.Response response) {
-      _isLoading = false;
       final List<Product> fetchedProductList = [];
       final Map<String, dynamic> productListData = json.decode(response.body);
       if (productListData == null) {
@@ -173,26 +187,33 @@ mixin ProductsModel on ConnectedProductsModel {
         final Product product = Product(
             id: productId,
             title: productData['title'],
-            description: productData['descrpition'],
+            description: productData['description'],
             image: productData['image'],
             price: productData['price'],
+            location: LocationData(
+                address: productData['loc_address'],
+                latitude: productData['loc_lat'],
+                longitude: productData['loc_lng']),
             userEmail: productData['userEmail'],
             userId: productData['userId'],
             isFavorite: productData['wishlistUsers'] == null
                 ? false
                 : (productData['wishlistUsers'] as Map<String, dynamic>)
-                    .containsKey(_authenticatedUser.id));
+                .containsKey(_authenticatedUser.id));
         fetchedProductList.add(product);
       });
-      _products = fetchedProductList.where((Product product) {
+      _products = onlyForUser
+          ? fetchedProductList.where((Product product) {
         return product.userId == _authenticatedUser.id;
-      }).toList();
+      }).toList()
+          : fetchedProductList;
+      _isLoading = false;
       notifyListeners();
       _selProductId = null;
     }).catchError((error) {
       _isLoading = false;
       notifyListeners();
-      return false;
+      return;
     });
   }
 
@@ -205,6 +226,7 @@ mixin ProductsModel on ConnectedProductsModel {
         description: selectedProduct.description,
         price: selectedProduct.price,
         image: selectedProduct.image,
+        location: selectedProduct.location,
         userEmail: selectedProduct.userEmail,
         userId: selectedProduct.userId,
         isFavorite: newFavoriteStatus);
@@ -213,12 +235,11 @@ mixin ProductsModel on ConnectedProductsModel {
     http.Response response;
     if (newFavoriteStatus) {
       response = await http.put(
-          'https://flutter-products-b4307.firebaseio.com/products/${selectedProduct.id}/wishlistUsers.${_authenticatedUser.id}.json?auth=${_authenticatedUser.token}',
+          'https://flutter-products.firebaseio.com/products/${selectedProduct.id}/wishlistUsers/${_authenticatedUser.id}.json?auth=${_authenticatedUser.token}',
           body: json.encode(true));
     } else {
       response = await http.delete(
-        'https://flutter-products-b4307.firebaseio.com/products/${selectedProduct.id}/wishlistUsers.${_authenticatedUser.id}.json?auth=${_authenticatedUser.token}',
-      );
+          'https://flutter-products.firebaseio.com/products/${selectedProduct.id}/wishlistUsers/${_authenticatedUser.id}.json?auth=${_authenticatedUser.token}');
     }
     if (response.statusCode != 200 && response.statusCode != 201) {
       final Product updatedProduct = Product(
@@ -227,6 +248,7 @@ mixin ProductsModel on ConnectedProductsModel {
           description: selectedProduct.description,
           price: selectedProduct.price,
           image: selectedProduct.image,
+          location: selectedProduct.location,
           userEmail: selectedProduct.userEmail,
           userId: selectedProduct.userId,
           isFavorite: !newFavoriteStatus);
@@ -267,30 +289,32 @@ mixin UserModel on ConnectedProductsModel {
     final Map<String, dynamic> authData = {
       'email': email,
       'password': password,
-      'returnSecureToken': true,
+      'returnSecureToken': true
     };
     http.Response response;
     if (mode == AuthMode.Login) {
       response = await http.post(
-        'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE',
+        'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=${
+            'AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE'}',
         body: json.encode(authData),
         headers: {'Content-Type': 'application/json'},
       );
     } else {
       response = await http.post(
-        'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE',
+        'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=${
+            'AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE'}',
         body: json.encode(authData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
     }
+
     final Map<String, dynamic> responseData = json.decode(response.body);
     bool hasError = true;
     String message = 'Something went wrong.';
+    print(responseData);
     if (responseData.containsKey('idToken')) {
       hasError = false;
-      message = 'Authentication succeeded.';
+      message = 'Authentication succeeded!';
       _authenticatedUser = User(
           id: responseData['localId'],
           email: email,
@@ -299,7 +323,7 @@ mixin UserModel on ConnectedProductsModel {
       _userSubject.add(true);
       final DateTime now = DateTime.now();
       final DateTime expiryTime =
-          now.add(Duration(seconds: int.parse(responseData['expiresIn'])));
+      now.add(Duration(seconds: int.parse(responseData['expiresIn'])));
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       prefs.setString('token', responseData['idToken']);
       prefs.setString('userEmail', email);

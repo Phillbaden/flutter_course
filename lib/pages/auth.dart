@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:scoped_model/scoped_model.dart';
 
-import '../scoped_models/main.dart';
+import '../scoped-models/main.dart';
 import '../models/auth.dart';
 
 class AuthPage extends StatefulWidget {
@@ -100,7 +100,7 @@ class _AuthPageState extends State<AuthPage> {
     successInformation = await authenticate(
         _formData['email'], _formData['password'], _authMode);
     if (successInformation['success']) {
-//      Navigator.pushReplacementNamed(context, '/');
+      // Navigator.pushReplacementNamed(context, '/');
     } else {
       showDialog(
         context: context,
@@ -151,7 +151,7 @@ class _AuthPageState extends State<AuthPage> {
                     SizedBox(
                       height: 10.0,
                     ),
-                    _authMode == AuthMode.SignUp
+                    _authMode == AuthMode.Signup
                         ? _buildPasswordConfirmTextField()
                         : Container(),
                     _buildAcceptSwitch(),
@@ -164,7 +164,7 @@ class _AuthPageState extends State<AuthPage> {
                       onPressed: () {
                         setState(() {
                           _authMode = _authMode == AuthMode.Login
-                              ? AuthMode.SignUp
+                              ? AuthMode.Signup
                               : AuthMode.Login;
                         });
                       },
