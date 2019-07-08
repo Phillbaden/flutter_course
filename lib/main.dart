@@ -15,7 +15,7 @@ void main() {
   // debugPaintSizeEnabled = true;
   // debugPaintBaselinesEnabled = true;
   // debugPaintPointersEnabled = true;
-  MapView.setApiKey('AIzaSyCLQTG59usHzrIRrkQwmb8Pzu8OMqsa7ho');
+  MapView.setApiKey('AIzaSyCKVTAKTl39SZLnq5ByL1--ayuYEBkNIE');
   runApp(MyApp());
 }
 
@@ -43,7 +43,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    print('building main page');
     return ScopedModel<MainModel>(
       model: _model,
       child: MaterialApp(
