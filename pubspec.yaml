@@ -29,6 +29,7 @@ dependencies:
   rxdart: ^0.18.0
   location: ^2.3.5
   image_picker: ^0.6.0+10
+  url_launcher: ^5.0.3
   mime: ^0.9.6+3
   map_view:
     git:
