@@ -1,6 +1,6 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:async/async.dart';
 
 import 'package:map_view/map_view.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +9,7 @@ import 'package:location/location.dart' as geoloc;
 import '../helpers/ensure_visible.dart';
 import '../../models/location_data.dart';
 import '../../models/product.dart';
+import '../../shared/global_config.dart';
 
 class LocationInput extends StatefulWidget {
   final Function setLocation;
@@ -43,7 +44,8 @@ class _LocationInputState extends State<LocationInput> {
     super.dispose();
   }
 
-  void _getStaticMap(String address, {bool geocode = true, double lat, double lng}) async {
+  void _getStaticMap(String address,
+      {bool geocode = true, double lat, double lng}) async {
     if (address.isEmpty) {
       setState(() {
         _staticMapUri = null;
@@ -55,7 +57,7 @@ class _LocationInputState extends State<LocationInput> {
       final Uri uri = Uri.https(
         'maps.googleapis.com',
         '/maps/api/geocode/json',
-        {'address': address, 'key': 'AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE'},
+        {'address': address, 'key': apiKey},
       );
       final http.Response response = await http.get(uri);
       final decodedResponse = json.decode(response.body);
@@ -69,21 +71,21 @@ class _LocationInputState extends State<LocationInput> {
     } else if (lat == null && lng == null) {
       _locationData = widget.product.location;
     } else {
-      _locationData = LocationData(address: address, latitude: lat, longitude: lng);
+      _locationData =
+          LocationData(address: address, latitude: lat, longitude: lng);
     }
-
     if (mounted) {
-    final StaticMapProvider staticMapViewProvider =
-    StaticMapProvider('AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE');
-    final Uri staticMapUri = staticMapViewProvider.getStaticUriWithMarkers([
-      Marker('position', 'Position', _locationData.latitude,
-          _locationData.longitude)
-    ],
-        center: Location(_locationData.latitude, _locationData.longitude),
-        width: 500,
-        height: 300,
-        maptype: StaticMapViewType.roadmap);
-    widget.setLocation(_locationData);
+      final StaticMapProvider staticMapViewProvider =
+      StaticMapProvider(apiKey);
+      final Uri staticMapUri = staticMapViewProvider.getStaticUriWithMarkers([
+        Marker('position', 'Position', _locationData.latitude,
+            _locationData.longitude)
+      ],
+          center: Location(_locationData.latitude, _locationData.longitude),
+          width: 500,
+          height: 300,
+          maptype: StaticMapViewType.roadmap);
+      widget.setLocation(_locationData);
 
       setState(() {
         _addressInputController.text = _locationData.address;
@@ -96,7 +98,10 @@ class _LocationInputState extends State<LocationInput> {
     final uri = Uri.https(
       'maps.googleapis.com',
       '/maps/api/geocode/json',
-      {'latlng': '${lat.toString()},${lng.toString()}', 'key': 'AIzaSyCKVTAKTl39S_ZLnq5ByL1--ayuYEBkNIE'},
+      {
+        'latlng': '${lat.toString()},${lng.toString()}',
+        'key': apiKey
+      },
     );
     final http.Response response = await http.get(uri);
     final decodedResponse = json.decode(response.body);
@@ -105,10 +110,14 @@ class _LocationInputState extends State<LocationInput> {
   }
 
   void _getUserLocation() async {
-      final location = geoloc.Location();
-      final currentLocation = await location.getLocation();
-      final address = await _getAddress(currentLocation.latitude, currentLocation.longitude);
-      _getStaticMap(address, geocode: false, lat: currentLocation.latitude, lng: currentLocation.longitude);
+    final location = geoloc.Location();
+    final currentLocation = await location.getLocation();
+    final address = await _getAddress(
+        currentLocation.latitude, currentLocation.longitude);
+    _getStaticMap(address,
+        geocode: false,
+        lat: currentLocation.latitude,
+        lng: currentLocation.longitude);
   }
 
   void _updateLocation() {
@@ -134,14 +143,11 @@ class _LocationInputState extends State<LocationInput> {
             decoration: InputDecoration(labelText: 'Address'),
           ),
         ),
-        SizedBox(
-          height: 10.0,
-
+        SizedBox(height: 10.0),
+        FlatButton(
+          child: Text('Locate User'),
+          onPressed: _getUserLocation,
         ),
-        FlatButton(child: Text('Locate User'),
-        onPressed: () {
-          _getUserLocation;
-        },),
         SizedBox(
           height: 10.0,
         ),
