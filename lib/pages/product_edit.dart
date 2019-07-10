@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'package:scoped_model/scoped_model.dart';
 
 import '../widgets/helpers/ensure_visible.dart';
 import '../widgets/form_inputs/location.dart';
 import '../models/product.dart';
+import '../widgets/ui_elements/adaptive_progress_indicator.dart';
 import '../scoped-models/main.dart';
 import '../models/location_data.dart';
 import '../widgets/form_inputs/image_input.dart';
@@ -97,8 +99,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
   Widget _buildPriceTextField(Product product) {
     if (product == null && _priceTextController.text.trim() == '') {
       _priceTextController.text = '';
-    } else if (product != null &&
-        _priceTextController.text.trim() == '') {
+    } else if (product != null && _priceTextController.text.trim() == '') {
       _priceTextController.text = product.price.toString();
     }
     return EnsureVisibleWhenFocused(
@@ -124,7 +125,8 @@ class _ProductEditPageState extends State<ProductEditPage> {
     return ScopedModelDescendant<MainModel>(
       builder: (BuildContext context, Widget child, MainModel model) {
         return model.isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? Center(
+                child: AdaptiveProgressIndicator())
             : RaisedButton(
                 child: Text('Save'),
                 textColor: Colors.white,
@@ -248,6 +250,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
             : Scaffold(
                 appBar: AppBar(
                   title: Text('Edit Product'),
+                  elevation: Theme.of(context).platform == TargetPlatform.iOS ? 0.0 : 4.0,
                 ),
                 body: pageContent,
               );
